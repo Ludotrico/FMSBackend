@@ -248,57 +248,59 @@ def registerUser(request, fname, email,  username, salt, psw, zip):
 # Deletes user
 #------------------------------------------------
 @api_view(['POST',])
-def deleteUser(request, username, token):
-    if not Account.objects.filter(salt=token, username=username):
+def deleteUser(request, userID, token):
+    if not Account.objects.filter(salt=token, id=userID):
         return HttpResponse("Invalid Token!")
-    u = Account.objects.filter(username=username)
+    u = Account.objects.filter(id=userID)[0]
     u.delete()
 
-    return HttpResponse(json.dumps({"message": "User %s deleted." % username}))
+    return HttpResponse(json.dumps({"message": "User %s deleted." % u[0].username}))
 
 #------------------------------------------------------------
 # FEATURE: Logs in given (email) or (username) and (password)
 # Logs existing user in
 #------------------------------------------------------------
 @api_view(['POST', ])
-def loginUser(request, login, psw, lat, lon, token):
+def loginUser(request, userID, psw, lat, lon, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
-    user1 = Account.objects.filter(email=login)
-    user2 =  Account.objects.filter(username=login)
-    if not(user1 or user2):
+    user1 = Account.objects.filter(id=userID)
+    #user2 =  Account.objects.filter(username=login)
+    # if not(user1 or user2):
+    #     return HttpResponse(json.dumps({"message": "#Username or email not found."}))
+    if not user1.exists():
         return HttpResponse(json.dumps({"message": "#Username or email not found."}))
 
 
-    if user1:
-        user1 = user1[0]
-        if user1.password == psw:
-            user1.lastLogin = datetime.now(timezone.utc)
-            if not lat == '0.0':
-                user1.latitude = float(lat)
-                user1.longitude = float(lon)
-                user1.save(update_fields=['lastLogin', 'latitude', 'longitude'])
+    # if user1:
+    user1 = user1[0]
+    if user1.password == psw:
+        user1.lastLogin = datetime.now(timezone.utc)
+        if not lat == '0.0':
+            user1.latitude = float(lat)
+            user1.longitude = float(lon)
+            user1.save(update_fields=['lastLogin', 'latitude', 'longitude'])
 
-            user1.badges = 0
-            isGold = updateUserGoldStatus(user1) if user1.isGold else False
-            user1.save(update_fields=['lastLogin', 'badges'])
+        user1.badges = 0
+        isGold = updateUserGoldStatus(user1) if user1.isGold else False
+        user1.save(update_fields=['lastLogin', 'badges'])
 
-            return HttpResponse(json.dumps({"message": "T" if isGold else "F"}))
-    else:
-        user2 = user2[0]
-        if user2.password == psw:
-            user2.lastLogin = datetime.now(timezone.utc)
-            if not lat == '0.0':
-                user2.latitude = float(lat)
-                user2.longitude = float(lon)
-                user2.save(update_fields=['lastLogin', 'latitude', 'longitude'])
-
-            user2.badges = 0
-            isGold = updateUserGoldStatus(user2) if user2.isGold else False
-            user2.save(update_fields=['lastLogin', 'badges'])
-
-            return HttpResponse(json.dumps({"message": "T" if isGold else "F"}))
+        return HttpResponse(json.dumps({"message": "T" if isGold else "F"}))
+    # else:
+    #     user2 = user2[0]
+    #     if user2.password == psw:
+    #         user2.lastLogin = datetime.now(timezone.utc)
+    #         if not lat == '0.0':
+    #             user2.latitude = float(lat)
+    #             user2.longitude = float(lon)
+    #             user2.save(update_fields=['lastLogin', 'latitude', 'longitude'])
+    #
+    #         user2.badges = 0
+    #         isGold = updateUserGoldStatus(user2) if user2.isGold else False
+    #         user2.save(update_fields=['lastLogin', 'badges'])
+    #
+    #         return HttpResponse(json.dumps({"message": "T" if isGold else "F"}))
 
     return HttpResponse(json.dumps({"message": "#Incorrect password."}))
 
@@ -469,11 +471,11 @@ def setActiveUsers():
 # Creates new db row for user
 #----------------------------
 @api_view(['POST', ])
-def addSKUStoreNotification(request, usernm, sku, storeID, date, token):
+def addSKUStoreNotification(request, userID, sku, storeID, date, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
-    user = Account.objects.filter(username=usernm)[0]
+    user = Account.objects.filter(id=userID)[0]
     store = Stores.objects.filter(id=storeID)[0]
 
     product = Products.objects.filter(SKU=sku, store_id=store.id)[0]
@@ -491,11 +493,11 @@ def addSKUStoreNotification(request, usernm, sku, storeID, date, token):
 # Creates new db row for user
 #----------------------------
 @api_view(['POST', ])
-def addSKURegionNotification(request, usernm, sku, radius, metric, city, latitude, longitude, date, token):
+def addSKURegionNotification(request, userID, sku, radius, metric, city, latitude, longitude, date, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
-    user = Account.objects.filter(username=usernm)[0]
+    user = Account.objects.filter(id=userID)[0]
 
     latitude, longitude = float(latitude), float(longitude)
 
@@ -517,11 +519,11 @@ def addSKURegionNotification(request, usernm, sku, radius, metric, city, latitud
 # Creates new db row for user
 #----------------------------
 @api_view(['POST', ])
-def addSupplyRegionNotification(request, usernm, supply, radius,  metric, city, latitude, longitude, date, token):
+def addSupplyRegionNotification(request, userID, supply, radius,  metric, city, latitude, longitude, date, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
-    user = Account.objects.filter(username=usernm)[0]
+    user = Account.objects.filter(id=userID)[0]
 
     latitude, longitude = float(latitude), float(longitude)
 
@@ -542,26 +544,26 @@ def addSupplyRegionNotification(request, usernm, supply, radius,  metric, city, 
 # Updates user profile
 #----------------------------
 @api_view(['POST', ])
-def updateUserProfile(request, oldUsername, fName, usrname, email, token):
+def updateUserProfile(request, userID, fName, usrname, email, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
     if not fName == "_":
-        user = Account.objects.filter(username=oldUsername)[0]
+        user = Account.objects.filter(id=userID)[0]
         user.firstName = fName
         user.save()
 
     if not usrname == "_":
         if Account.objects.filter(username=usrname):
             return HttpResponse(json.dumps({"message": "#Username already exists."}))
-        user = Account.objects.filter(username=oldUsername)[0]
+        user = Account.objects.filter(id=userID)[0]
         user.username = usrname
         user.save()
 
     if not email == "_":
         if Account.objects.filter(email=email):
             return HttpResponse(json.dumps({"message": "#Email already exists."}))
-        user = Account.objects.filter(username=oldUsername)[0]
+        user = Account.objects.filter(id=userID)[0]
         user.email = email
         user.save()
 
@@ -601,7 +603,7 @@ def changePassword(request, login, salt, newPsw, type):
 # FEATURE: View user notifications
 # Returns all user notifications
 #---------------------------------
-def getAreaNotifications(request, username, token):
+def getAreaNotifications(request, userID, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
@@ -609,7 +611,7 @@ def getAreaNotifications(request, username, token):
     notifs = []
 
     now = datetime.now(timezone.utc)
-    user = Account.objects.filter(username=username)[0]
+    user = Account.objects.filter(id=userID)[0]
     for notif in sorted(Notifications.objects.filter(user=user, store=None).values("radius", "city", "store__id", "store__chainName", "store__address", "supplyName", "product__id", "product__name", "product__imageLink", "date", "dateTime"), key=lambda x: now - x["dateTime"]):
         del notif["dateTime"]
         notifs.append(notif)
@@ -620,7 +622,7 @@ def getAreaNotifications(request, username, token):
 # FEATURE: View user notifications
 # Returns all user notifications
 #---------------------------------
-def getStoreNotifications(request, username, token):
+def getStoreNotifications(request, userID, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
@@ -628,7 +630,7 @@ def getStoreNotifications(request, username, token):
     notifs = []
 
     now = datetime.now(timezone.utc)
-    user = Account.objects.filter(username=username)[0]
+    user = Account.objects.filter(id=userID)[0]
     for notif in sorted(Notifications.objects.filter(user=user, radius=None).values("radius", "city", "store__id", "store__chainName", "store__address", "supplyName", "product__id", "product__name", "product__imageLink", "date", "dateTime"), key=lambda x: now - x["dateTime"]):
         del notif["dateTime"]
         notifs.append(notif)
@@ -642,13 +644,13 @@ def getStoreNotifications(request, username, token):
 # Deletes user notification
 #-------------------------------------------
 @api_view(['POST', ])
-def deleteSupplyRegionNotification(request, username, supply, radius, city, date, token):
+def deleteSupplyRegionNotification(request, userID, supply, radius, city, date, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
     supply = supply.replace("_", " ")
     city = city.replace("_", " ")
-    notif = Notifications.objects.filter(user__username=username, supplyName=supply, radius=radius, city=city, date=date)[0]
+    notif = Notifications.objects.filter(user__id=userID, supplyName=supply, radius=radius, city=city, date=date)[0]
     notif.delete()
 
     return HttpResponse("Success")
@@ -658,11 +660,11 @@ def deleteSupplyRegionNotification(request, username, supply, radius, city, date
 # Deletes user notification
 #-----------------------------------------
 @api_view(['POST', ])
-def deleteSKUStoreNotification(request, username, productID, storeID, date, token):
+def deleteSKUStoreNotification(request, userID, productID, storeID, date, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
-    notif = Notifications.objects.filter(user__username=username, product__id=productID, store__id=storeID, date=date)[0]
+    notif = Notifications.objects.filter(user__id=userID, product__id=productID, store__id=storeID, date=date)[0]
     notif.delete()
 
     return HttpResponse("Success")
@@ -672,12 +674,12 @@ def deleteSKUStoreNotification(request, username, productID, storeID, date, toke
 # Deletes user notification
 #-----------------------------------------
 @api_view(['POST', ])
-def deleteSKURegionNotification(request, username, productID, radius, city, date, token):
+def deleteSKURegionNotification(request, userID, productID, radius, city, date, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
     city = city.replace("_", " ")
-    notif = Notifications.objects.filter(user__username=username, product__id=productID, radius=radius, city=city, date=date)[0]
+    notif = Notifications.objects.filter(user__id=userID, product__id=productID, radius=radius, city=city, date=date)[0]
     notif.delete()
 
     return HttpResponse("Success")
@@ -703,14 +705,14 @@ def addSubmission(request, supply, token):
 # Adds new zip to user row
 #--------------------------
 @api_view(['POST', ])
-def updateUserZip(request, username, zip, token):
+def updateUserZip(request, userID, zip, token):
     if not Account.objects.filter(salt=token):
         return HttpResponse("Invalid Token!")
 
 
     #Might fail because zipcode may not exist in the DB
     try:
-        user = Account.objects.filter(username=username)[0]
+        user = Account.objects.filter(id=userID)[0]
 
         oldZip = Zipcodes.objects.filter(zip=user.zip)[0].mappedZipcode
         oldZip.userCount = F('userCount') - 1

@@ -30,7 +30,7 @@ urlpatterns = [
     path('getTotalQuantityOf/<str:supply>/<int:storeID>/<str:token>', views.getTotalQuantity),
     path('getUserInfo/<str:login>', views.getUserInfo),
     path('getSalt', views.getSalt),
-    path('loginUser/<str:login>/<str:psw>/<lat>/<lon>/<str:token>', views.loginUser),
+    path('loginUser/<int:userID>/<str:psw>/<lat>/<lon>/<str:token>', views.loginUser),
     path('registerUser/<str:fname>/<str:email>/<str:username>/<str:salt>/<str:psw>/<int:zip>', views.registerUser),
     path('getStoreWithSupply/<str:supply>/<int:storeID>/<str:token>', views.getStoreWithSupply),
     path('getStoresWithSupply_Notif/<str:supply>/<int:radius><str:metric>/<latitude>/<longitude>/<str:token>', views.getStoresWithSupply_Notif),

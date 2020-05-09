@@ -121,7 +121,7 @@ def getNearbyStores(request, sku, radius, metric, latitude, longitude, storeID, 
     isMiles = metric == "mi"
     latBound, lonBound = find_lat_lon_Bound(latitude, radius, isMiles)
 
-    for store in sorted(Products.objects.filter( store__latitude__range=(latitude-latBound,latitude+latBound), store__longitude__range=(longitude-lonBound, longitude+lonBound), SKU=sku, inStock=True).exclude(store__id=storeID).values("store__id", 'store__chainName', 'store__address', "store__latitude", "store__longitude", "price", "quantity", 'minQuantity', 'clearance', "store__rating", "store__storeImage", "store__weekdayText", "store__openingHours", "store__googlePlaceID"), key=lambda x: distance.distance((x['store__latitude'],x['store__longitude']) , (latitude, longitude) ).miles if isMiles else distance.distance((x['store__latitude'],x['store__longitude']) , (latitude, longitude) ).kilometers):
+    for store in sorted(Products.objects.filter( store__latitude__range=(latitude-latBound,latitude+latBound), store__longitude__range=(longitude-lonBound, longitude+lonBound), SKU=sku, inStock=True).exclude(store__id=storeID).values("store__id", 'store__chainName', 'store__address', "store__latitude", "store__longitude", "store__city", "price", "quantity", 'minQuantity', 'clearance', "store__rating", "store__storeImage", "store__weekdayText", "store__openingHours", "store__googlePlaceID"), key=lambda x: distance.distance((x['store__latitude'],x['store__longitude']) , (latitude, longitude) ).miles if isMiles else distance.distance((x['store__latitude'],x['store__longitude']) , (latitude, longitude) ).kilometers):
         store["store__openingHours"] = list(store["store__openingHours"].split("/"))
         store["store__weekdayText"] = list(store["store__weekdayText"].split("/"))
         for i in range(0,7):
@@ -221,11 +221,13 @@ def registerUser(request, fname, email,  username, salt, psw, zip):
     searchableZip = zipcode[0].mappedZipcode
     searchableZip.userCount = F('userCount') + 1
 
-    if searchableZip.rank == 4:
+    if searchableZip.rank == 4 or searchableZip.rank == 0:
         isNew = True
-        searchableZip.rank = 0
+        if searchableZip.rank == 4:
+            searchableZip.isNew = True
+            searchableZip.rank = 0
 
-    searchableZip.save(update_fields=['rank', 'userCount'])
+    searchableZip.save(update_fields=['rank', 'userCount', 'isNew'])
 
 
     try:
@@ -386,14 +388,14 @@ def getUserInfo(response, login):
     if not(user1 or user2):
         return HttpResponse(json.dumps({
             "message": "#Username or email not found.",
-            "ID": user1.id,
-            "fName": user1.firstName,
-            "email": user1.email,
-            "username": user1.username,
-            "salt": user1.salt,
-            "password": user1.password,
-            "identifiedByEmail": True,
-            "zip": user1.zip,
+            "ID": 0,
+            "fName": '',
+            "email": '',
+            "username": '',
+            "salt": '',
+            "password": '',
+            "identifiedByEmail": False,
+            "zip": 0,
             "isGold": False
 
 
@@ -474,7 +476,7 @@ def addSKUStoreNotification(request, usernm, sku, storeID, date, token):
     user = Account.objects.filter(username=usernm)[0]
     store = Stores.objects.filter(id=storeID)[0]
 
-    product = Products.objects.filter(SKU=sku)[0]
+    product = Products.objects.filter(SKU=sku, store_id=store.id)[0]
 
     if Notifications.objects.filter(user=user, store=store, product__SKU=sku).count() == 0:
         newNotif = Notifications(user=user, store=store, type=3, product=product, date=date, dateTime=datetime.now(timezone.utc))
@@ -718,7 +720,7 @@ def updateUserZip(request, username, zip, token):
         newZip.userCount = F('userCount') + 1
 
         isNew = False
-        if newZip.rank == 4:
+        if newZip.rank == 4 or newZip.rank == 0:
             isNew = True
 
 
@@ -855,9 +857,12 @@ def addNewZipcode(request, zip, token):
         return HttpResponse("Invalid Token!")
 
     zipcode = Zipcodes.objects.filter(zip=zip)[0].mappedZipcode
-    zipcode.rank = 0
 
-    zipcode.save(update_fields=['rank'])
+    if zipcode.rank == 4:
+        zipcode.rank = 0
+        zipcode.isNew = True
+
+        zipcode.save(update_fields=['rank', 'isNew'])
 
     return HttpResponse("Success")
 

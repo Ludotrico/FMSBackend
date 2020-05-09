@@ -63,6 +63,9 @@ class Stores(models.Model):
    googlePlaceID = models.CharField(max_length=300, blank=True, null=True, default=None)
    scrapeID = models.BigIntegerField   (null=True, blank=True, default=None)
    scrapeName = models.CharField(max_length=100, null=True, blank=True, default=None)
+   zip = models.IntegerField(null=True, blank=True, default=None)
+   state = models.CharField(default=None, max_length=10, null=True, blank=True)
+   city = models.CharField(max_length=100, default=None, null=True, blank=True)
 
    def __str__(self):
       return "ID: %s Chain: %s Address: %s Latitude: %s Longitude: %s" % (self.id, self.chainName, self.address, self.latitude, self.longitude)
@@ -143,6 +146,7 @@ class Zipcodes(models.Model):
    longitude = models.FloatField(blank=True, null=True, default=None)
    lastScraped = models.DateTimeField(null=True, default=None)
    mappedZipcode = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
+   isNew = models.BooleanField(default=False, null=True, blank=True)
 
 
 

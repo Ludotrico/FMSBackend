@@ -110,7 +110,7 @@ if os.getenv('GAE_APPLICATION', None):
             'ENGINE': 'django.db.backends.mysql',
             'HOST': '/cloudsql/find-my-supply-274702:us-central1:fms',
             'USER': 'ludotrico',
-            'PASSWORD': 'TheGnarIsComing01M',
+            'PASSWORD': '',
             'NAME': 'find_my_supply',
         }
     }
@@ -128,7 +128,7 @@ else:
             'PORT': '3306',
             'NAME': 'find_my_supply',
             'USER': 'ludotrico',
-            'PASSWORD': 'TheGnarIsComing01M',
+            'PASSWORD': '',
         }
     }
 # [END db_setup]

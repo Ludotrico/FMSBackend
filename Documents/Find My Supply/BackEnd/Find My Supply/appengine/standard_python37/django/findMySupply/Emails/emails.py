@@ -3,7 +3,7 @@ from email.message import EmailMessage
 
 
 EMAIL = "findmysupplyapp@gmail.com"
-PSW = "TheGnarIsComing01F"
+PSW = "
 
 
 def customizeHtmlVerifContent(user, token):
